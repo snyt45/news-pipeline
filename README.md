@@ -100,7 +100,7 @@ GOOGLE_CREDENTIALS_PATH=./credentials.json
 
 ### 5. Spreadsheet準備
 
-1. Google Spreadsheetを新規作成（シート名はデフォルトの「シート1」のままにする。英語環境では「Sheet1」になるため、その場合は`.env`に`SPREADSHEET_SHEET_NAME=Sheet1`を追加する）
+1. Google Spreadsheetを新規作成（シート名はデフォルトの「シート1」のままにする。英語環境では「Sheet1」になるため、その場合は`.env`に`SHEET_NAME=Sheet1`を追加する）
 2. 1行目にヘッダーを入力: `日付 | カテゴリ | タイトル | URL | 要約 | ソース`
 3. サービスアカウントのメールアドレス（credentials.json内の`client_email`）をSpreadsheetの共有に追加（編集者権限）
 4. SpreadsheetのURLから`SPREADSHEET_ID`を取得（`/d/`と`/edit`の間の文字列）

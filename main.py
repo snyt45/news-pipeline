@@ -13,16 +13,16 @@ from googleapiclient.discovery import build
 
 FEEDS_PATH = "config/feeds.yaml"
 PROFILE_PATH = "config/profile.yaml"
-ARTICLE_MAX_AGE_HOURS = 24
+MAX_AGE_HOURS = 24
 SUMMARY_MAX_LENGTH = 200
-SPREADSHEET_SHEET_NAME_DEFAULT = "シート1"
+DEFAULT_SHEET_NAME = "シート1"
 
 
 def fetch_feeds(feeds_path=FEEDS_PATH):
     with open(feeds_path) as f:
         config = yaml.safe_load(f)
 
-    cutoff = datetime.now(timezone.utc) - timedelta(hours=ARTICLE_MAX_AGE_HOURS)
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=MAX_AGE_HOURS)
     articles = []
 
     for feed_conf in config["feeds"]:
@@ -140,7 +140,7 @@ def build_sheets_service():
 
 def already_curated_today(service):
     spreadsheet_id = os.environ["SPREADSHEET_ID"]
-    sheet_name = os.environ.get("SPREADSHEET_SHEET_NAME", SPREADSHEET_SHEET_NAME_DEFAULT)
+    sheet_name = os.environ.get("SHEET_NAME", DEFAULT_SHEET_NAME)
     result = service.spreadsheets().values().get(
         spreadsheetId=spreadsheet_id,
         range=f"{sheet_name}!A:A",
@@ -168,7 +168,7 @@ def append_to_spreadsheet(service, curated):
 
     service.spreadsheets().values().append(
         spreadsheetId=spreadsheet_id,
-        range=os.environ.get("SPREADSHEET_SHEET_NAME", SPREADSHEET_SHEET_NAME_DEFAULT),
+        range=os.environ.get("SHEET_NAME", DEFAULT_SHEET_NAME),
         valueInputOption="RAW",
         body={"values": rows},
     ).execute()
