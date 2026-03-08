@@ -265,8 +265,6 @@ def write_to_google_docs(docs_service, rows):
         body={"requests": requests},
     ).execute()
 
-    print(f"[Google Docs] {len(rows)}件書き出しました")
-
 
 def main():
     load_dotenv()
@@ -330,6 +328,7 @@ def main():
         rows = read_today_from_spreadsheet(sheets_service)
         print("[Google Docs] 書き出し中...")
         write_to_google_docs(docs_service, rows)
+        print(f"[Google Docs] {len(rows)}件書き出しました")
 
 
 if __name__ == "__main__":
