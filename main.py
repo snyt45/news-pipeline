@@ -9,12 +9,18 @@ from calendar import timegm
 from google import genai
 from dotenv import load_dotenv
 
+FEEDS_PATH = "config/feeds.yaml"
+PROFILE_PATH = "config/profile.yaml"
+GEMINI_API_KEY_ENV = "GEMINI_API_KEY"
+ARTICLE_MAX_AGE_HOURS = 24
+SUMMARY_MAX_LENGTH = 200
 
-def fetch_feeds(feeds_path="config/feeds.yaml"):
+
+def fetch_feeds(feeds_path=FEEDS_PATH):
     with open(feeds_path) as f:
         config = yaml.safe_load(f)
 
-    cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=ARTICLE_MAX_AGE_HOURS)
     articles = []
 
     for feed_conf in config["feeds"]:
@@ -45,7 +51,7 @@ def fetch_feeds(feeds_path="config/feeds.yaml"):
     return articles
 
 
-def build_prompt(profile_path="config/profile.yaml", articles=None, profile=None):
+def build_prompt(profile_path=PROFILE_PATH, articles=None, profile=None):
     if profile is None:
         with open(profile_path) as f:
             profile = yaml.safe_load(f)
@@ -86,13 +92,13 @@ def build_prompt(profile_path="config/profile.yaml", articles=None, profile=None
             lines.append(f"{i}. [{a['source']}] {a['title']}")
             lines.append(f"   URL: {a['url']}")
             if a.get("summary"):
-                lines.append(f"   要約: {a['summary'][:200]}")
+                lines.append(f"   要約: {a['summary'][:SUMMARY_MAX_LENGTH]}")
             lines.append("")
 
     return "\n".join(lines)
 
 
-def curate(articles, profile_path="config/profile.yaml"):
+def curate(articles, profile_path=PROFILE_PATH):
     if not articles:
         return []
 
@@ -101,7 +107,7 @@ def curate(articles, profile_path="config/profile.yaml"):
 
     prompt = build_prompt(profile_path, articles, profile=profile)
 
-    client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
+    client = genai.Client(api_key=os.environ[GEMINI_API_KEY_ENV])
     response = client.models.generate_content(
         model=profile["model"],
         contents=prompt,

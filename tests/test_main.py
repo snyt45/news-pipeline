@@ -140,8 +140,9 @@ def test_curate_returns_parsed_articles(tmp_path):
     mock_response = MagicMock()
     mock_response.text = api_response_text
 
+    from main import GEMINI_API_KEY_ENV
     with patch("main.genai") as mock_genai, \
-         patch.dict("os.environ", {"GEMINI_API_KEY": "test-key"}):
+         patch.dict("os.environ", {GEMINI_API_KEY_ENV: "test-key"}):
         mock_genai.Client.return_value.models.generate_content.return_value = mock_response
         from main import curate
         result = curate(articles, str(profile_yaml))
