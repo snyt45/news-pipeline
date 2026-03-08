@@ -132,11 +132,25 @@ GOOGLE_DOC_ID=取得したDocsのID
 ```bash
 mise tasks         # コマンド一覧を表示
 mise run dry-run   # 厳選結果をターミナルに出力
-mise run pipeline  # 全パイプライン実行（Spreadsheet出力）
+mise run pipeline  # 全パイプライン実行（Spreadsheet + Google Docs出力）
 mise run test      # テスト実行
 ```
 
-## Spreadsheetのローテーション
+## 使い方
+
+### 毎朝の運用
+
+`mise run pipeline`を実行する。初回実行時はRSS取得→LLM厳選→Spreadsheet追記→Google Docs書き出しの全工程が走る。同じ日に再実行するとSpreadsheet追記はスキップされるが、Google Docsの書き出しは毎回実行される（Spreadsheetの今日分を読み取って上書きするため）。
+
+### 手動で記事を追加したいとき
+
+Spreadsheetに直接行を追加する（日付・カテゴリ・タイトル・URL・要約・ソース）。その後`mise run pipeline`を再実行すると、手動追加分も含めてGoogle Docsに反映される。
+
+### dry-runで試す
+
+`mise run dry-run`は厳選結果をターミナルに出力するだけ。SpreadsheetやGoogle Docsには書き込まない。
+
+### Spreadsheetのローテーション
 
 NotebookLMのSpreadsheetソース制限は10万トークン。パイプライン実行時にトークン使用量が80%を超えると警告が表示される。
 
