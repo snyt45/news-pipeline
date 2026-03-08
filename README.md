@@ -2,7 +2,49 @@
 
 RSSで技術ニュースを収集し、LLMで自分の興味に合う記事を厳選するパイプライン。
 
-散歩中にNotebookLMラジオで自分向けの技術ニュースを聴くための仕組み。
+厳選した記事をGoogle Spreadsheetに蓄積し、NotebookLMのソースにしてラジオ形式で聴く。散歩中に自分専用の技術ニュースラジオを聴くための仕組み。
+
+## 仕組み
+
+```
+[自動] RSS取得 → LLMで厳選・要約 → Spreadsheetに追記
+[手動] Spreadsheet → Google Docsにコピー → NotebookLMでラジオ生成 → 聴く
+```
+
+自動化されているのはRSS取得からSpreadsheet追記まで。NotebookLMへの入力と音声生成は手動。
+
+## Forkして自分用に調整する
+
+このリポジトリをForkして、2つのファイルを編集すれば自分専用のパイプラインになる。
+
+**`config/feeds.yaml`** — 情報源の追加・変更
+
+```yaml
+feeds:
+  - name: "Zenn - トレンド"
+    url: "https://zenn.dev/feed"
+    lang: "ja"
+  # 自分の読みたいRSSフィードを追加
+```
+
+**`config/profile.yaml`** — 自分の興味・嗜好を定義
+
+```yaml
+role: "フルスタックエンジニア（Ruby, TypeScript, React）"
+articles_per_day: 15
+
+interests:
+  - "AI/LLMの実用的な活用事例や新動向"
+  - "開発ツール・ワークフロー改善"
+  # 自分の興味を追加
+
+exclude:
+  - "初心者向けチュートリアル"
+  - "プレスリリースや広告色が強い記事"
+  # 除外したいジャンルを追加
+```
+
+LLMがこの設定をもとに記事を選別するので、`interests`と`exclude`を自分に合わせて書き換えるだけで厳選の精度が変わる。
 
 ## クイックスタート
 
@@ -59,9 +101,3 @@ mise run dry-run   # 厳選結果をターミナルに出力
 mise run run       # 全パイプライン実行（Spreadsheet出力）
 mise run test      # テスト実行
 ```
-
-## カスタマイズ
-
-- `config/feeds.yaml` — RSSフィードURLを追加・変更
-- `config/profile.yaml` — 興味・嗜好・除外基準を変更
-- `.env` — APIキー・Google リソースIDを設定
