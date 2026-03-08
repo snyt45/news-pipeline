@@ -4,10 +4,12 @@ import json
 import os
 import re
 import yaml
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone, timedelta, date
 from calendar import timegm
 from google import genai
 from dotenv import load_dotenv
+from google.oauth2.service_account import Credentials as ServiceAccountCredentials
+from googleapiclient.discovery import build
 
 FEEDS_PATH = "config/feeds.yaml"
 PROFILE_PATH = "config/profile.yaml"
@@ -132,6 +134,43 @@ def parse_curate_response(text):
         return []
 
 
+SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
+
+
+def append_to_spreadsheet(curated):
+    if not curated:
+        return
+
+    spreadsheet_id = os.environ[SPREADSHEET_ID_ENV]
+    credentials_path = os.environ.get(CREDENTIALS_PATH_ENV, DEFAULT_CREDENTIALS_PATH)
+
+    creds = ServiceAccountCredentials.from_service_account_file(
+        credentials_path, scopes=SCOPES
+    )
+    service = build("sheets", "v4", credentials=creds)
+
+    today = date.today().isoformat()
+    rows = []
+    for a in curated:
+        rows.append([
+            today,
+            a.get("category", ""),
+            a["title"],
+            a["url"],
+            a.get("summary_ja", ""),
+            a.get("source", ""),
+        ])
+
+    service.spreadsheets().values().append(
+        spreadsheetId=spreadsheet_id,
+        range=SPREADSHEET_RANGE,
+        valueInputOption="RAW",
+        body={"values": rows},
+    ).execute()
+
+    print(f"Spreadsheetに{len(rows)}件追記しました")
+
+
 def main():
     load_dotenv()
 
@@ -159,8 +198,8 @@ def main():
             print(f"   {a.get('summary_ja', '')}")
         return
 
-    # Phase 2: Google出力（後で実装）
-    print("[TODO] Spreadsheet追記 + Google Docs上書き")
+    print("Spreadsheetに追記中...")
+    append_to_spreadsheet(curated)
 
 
 if __name__ == "__main__":

@@ -174,3 +174,47 @@ def test_parse_curate_response_invalid_json():
     from main import parse_curate_response
     result = parse_curate_response("これはJSONではない")
     assert result == []
+
+
+def test_append_to_spreadsheet_sends_correct_data():
+    """キュレーション結果が正しい形式でSpreadsheetに追記される"""
+    curated = [
+        {
+            "title": "Test Article",
+            "url": "https://example.com/1",
+            "summary_ja": "テスト要約",
+            "source": "Test Feed",
+            "category": "AI/LLM",
+        },
+    ]
+
+    mock_service = MagicMock()
+    mock_sheet = mock_service.spreadsheets.return_value.values.return_value
+    mock_sheet.append.return_value.execute.return_value = {}
+
+    from main import SPREADSHEET_ID_ENV, CREDENTIALS_PATH_ENV
+    with patch("main.build") as mock_build, \
+         patch("main.ServiceAccountCredentials.from_service_account_file") as mock_creds, \
+         patch.dict("os.environ", {SPREADSHEET_ID_ENV: "test-sheet-id", CREDENTIALS_PATH_ENV: "./credentials.json"}):
+        mock_build.return_value = mock_service
+        from main import append_to_spreadsheet
+        append_to_spreadsheet(curated)
+
+    mock_sheet.append.assert_called_once()
+    call_kwargs = mock_sheet.append.call_args
+    body = call_kwargs[1]["body"] if "body" in call_kwargs[1] else call_kwargs.kwargs["body"]
+    rows = body["values"]
+    assert len(rows) == 1
+    assert rows[0][1] == "AI/LLM"
+    assert rows[0][2] == "Test Article"
+    assert rows[0][3] == "https://example.com/1"
+    assert rows[0][4] == "テスト要約"
+    assert rows[0][5] == "Test Feed"
+
+
+def test_append_to_spreadsheet_skips_empty_list():
+    """空リストの場合はAPI呼び出しをスキップする"""
+    with patch("main.build") as mock_build:
+        from main import append_to_spreadsheet
+        append_to_spreadsheet([])
+    mock_build.assert_not_called()
