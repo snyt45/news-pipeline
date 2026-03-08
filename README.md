@@ -11,7 +11,7 @@ flowchart TD
     subgraph 自動
         A[RSS取得<br/>Zenn, HN, はてブ等] --> B[Gemini APIで15件に厳選<br/>+ 日本語要約]
         B --> C[Spreadsheetに追記<br/>履歴蓄積]
-        C --> D[Google Docsに書き出し<br/>未実装]
+        C --> D[Google Docsに書き出し]
     end
     subgraph 手動
         E[NotebookLMでラジオ生成] --> F[散歩中に聴く]
@@ -22,7 +22,7 @@ flowchart TD
 1. **RSS取得** — feeds.yamlに登録したフィードから24時間以内の記事を収集
 2. **LLMで厳選** — profile.yamlの興味・除外基準をもとに、Gemini APIが15件に絞り込んで日本語要約をつける
 3. **Spreadsheet追記** — 日付・カテゴリ・タイトル・URL・要約・ソースを1行1記事で蓄積
-4. **Google Docs書き出し**（未実装）— 今日分の厳選結果をNotebookLMのソース用に書き出す
+4. **Google Docs書き出し** — Spreadsheetから今日分を読み取り、カテゴリ別に構造化してGoogle Docsに上書き
 5. **NotebookLMでラジオ生成**（手動）— Google DocsをNotebookLMに追加し、音声を生成
 6. **聴く**（手動）— 生成されたラジオを散歩中に聴く
 
@@ -111,6 +111,22 @@ GOOGLE_CREDENTIALS_PATH=./credentials.json
 SPREADSHEET_ID=取得したSpreadsheetのID
 ```
 
+### 6. Google Docs準備（任意）
+
+NotebookLMのソースとして使うGoogle Docsを準備する。
+
+1. Google Docsを新規作成
+2. サービスアカウントのメールアドレスをDocsの共有に追加（編集者権限）
+3. DocsのURLから`GOOGLE_DOC_ID`を取得（`/d/`と`/edit`の間の文字列）
+
+`.env`に追記:
+
+```
+GOOGLE_DOC_ID=取得したDocsのID
+```
+
+設定しない場合、Spreadsheetへの追記のみ実行される。
+
 ## コマンド
 
 ```bash
@@ -119,3 +135,16 @@ mise run dry-run   # 厳選結果をターミナルに出力
 mise run pipeline  # 全パイプライン実行（Spreadsheet出力）
 mise run test      # テスト実行
 ```
+
+## Spreadsheetのローテーション
+
+NotebookLMのSpreadsheetソース制限は10万トークン。パイプライン実行時にトークン使用量が80%を超えると警告が表示される。
+
+警告が出たら:
+
+1. 新しいGoogle Spreadsheetを作成
+2. 1行目にヘッダーを入力: `日付 | カテゴリ | タイトル | URL | 要約 | ソース`
+3. サービスアカウントを共有に追加（編集者権限）
+4. `.env`の`SPREADSHEET_ID`を新しいIDに差し替え
+
+旧Spreadsheetはそのまま残るので、過去記事の検索に使える。
