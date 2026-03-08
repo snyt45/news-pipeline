@@ -1,0 +1,17 @@
+role: "フルスタックエンジニア（Ruby, TypeScript, React）"
+model: "gemini-2.5-flash-lite"
+language: "ja"
+articles_per_day: 15
+
+interests:
+  - "AI/LLMの実用的な活用事例や新動向"
+  - "開発ツール・ワークフロー改善"
+  - "個人開発・副業に活かせる知見"
+  - "ソフトウェアアーキテクチャ・設計パターン"
+  - "Obsidian・PKM・セカンドブレイン"
+
+exclude:
+  - "初心者向けチュートリアル"
+  - "プレスリリースや広告色が強い記事"
+  - "内容の薄い焼き直し・まとめ記事"
+  - "AIスロップ"

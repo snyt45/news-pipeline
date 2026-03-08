@@ -1,0 +1,10 @@
+feeds:
+  - name: "Zenn - トレンド"
+    url: "https://zenn.dev/feed"
+    lang: "ja"
+  - name: "Hacker News (100pt+)"
+    url: "https://hnrss.org/newest?points=100"
+    lang: "en"
+  - name: "はてなブックマーク - テクノロジー"
+    url: "https://b.hatena.ne.jp/hotentry/it.rss"
+    lang: "ja"
