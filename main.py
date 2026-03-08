@@ -133,33 +133,36 @@ SCOPES = [
     "https://www.googleapis.com/auth/spreadsheets",
     "https://www.googleapis.com/auth/documents",
 ]
+ENV_SHEET_NAME = "SHEET_NAME"
+
+
+def _build_google_service(api_name, version):
+    credentials_path = os.environ.get("GOOGLE_CREDENTIALS_PATH", "./credentials.json")
+    creds = ServiceAccountCredentials.from_service_account_file(
+        credentials_path, scopes=SCOPES
+    )
+    return build(api_name, version, credentials=creds)
 
 
 def build_sheets_service():
-    credentials_path = os.environ.get("GOOGLE_CREDENTIALS_PATH", "./credentials.json")
-    creds = ServiceAccountCredentials.from_service_account_file(
-        credentials_path, scopes=SCOPES
-    )
-    return build("sheets", "v4", credentials=creds)
+    return _build_google_service("sheets", "v4")
 
 
 def build_docs_service():
-    credentials_path = os.environ.get("GOOGLE_CREDENTIALS_PATH", "./credentials.json")
-    creds = ServiceAccountCredentials.from_service_account_file(
-        credentials_path, scopes=SCOPES
-    )
-    return build("docs", "v1", credentials=creds)
+    return _build_google_service("docs", "v1")
 
 
-def check_spreadsheet_token_usage(service):
+def fetch_spreadsheet_data(service):
     spreadsheet_id = os.environ["SPREADSHEET_ID"]
-    sheet_name = os.environ.get("SHEET_NAME", DEFAULT_SHEET_NAME)
+    sheet_name = os.environ.get(ENV_SHEET_NAME, DEFAULT_SHEET_NAME)
     result = service.spreadsheets().values().get(
         spreadsheetId=spreadsheet_id,
         range=sheet_name,
     ).execute()
-    all_rows = result.get("values", [])
+    return result.get("values", [])
 
+
+def check_spreadsheet_token_usage(all_rows):
     total_chars = sum(len(cell) for row in all_rows for cell in row)
     estimated_tokens = total_chars  # 日本語1文字≈1トークンで概算
 
@@ -170,14 +173,8 @@ def check_spreadsheet_token_usage(service):
     return False
 
 
-def already_curated_today(service):
-    spreadsheet_id = os.environ["SPREADSHEET_ID"]
-    sheet_name = os.environ.get("SHEET_NAME", DEFAULT_SHEET_NAME)
-    result = service.spreadsheets().values().get(
-        spreadsheetId=spreadsheet_id,
-        range=f"{sheet_name}!A:A",
-    ).execute()
-    existing_dates = [row[0] for row in result.get("values", []) if row]
+def already_curated_today(all_rows):
+    existing_dates = [row[0] for row in all_rows if row]
     return date.today().isoformat() in existing_dates
 
 
@@ -200,7 +197,7 @@ def append_to_spreadsheet(service, curated):
 
     service.spreadsheets().values().append(
         spreadsheetId=spreadsheet_id,
-        range=os.environ.get("SHEET_NAME", DEFAULT_SHEET_NAME),
+        range=os.environ.get(ENV_SHEET_NAME, DEFAULT_SHEET_NAME),
         valueInputOption="RAW",
         body={"values": rows},
     ).execute()
@@ -208,14 +205,7 @@ def append_to_spreadsheet(service, curated):
     print(f"[Spreadsheet] {len(rows)}件追記しました")
 
 
-def read_today_from_spreadsheet(service):
-    spreadsheet_id = os.environ["SPREADSHEET_ID"]
-    sheet_name = os.environ.get("SHEET_NAME", DEFAULT_SHEET_NAME)
-    result = service.spreadsheets().values().get(
-        spreadsheetId=spreadsheet_id,
-        range=sheet_name,
-    ).execute()
-    all_rows = result.get("values", [])
+def read_today_rows(all_rows):
     today = date.today().isoformat()
     return [row for row in all_rows if row and row[0] == today]
 
@@ -266,6 +256,18 @@ def write_to_google_docs(docs_service, rows):
     ).execute()
 
 
+def _write_docs_if_configured(all_rows):
+    if not os.environ.get("GOOGLE_DOC_ID"):
+        return
+    rows = read_today_rows(all_rows)
+    if not rows:
+        return
+    docs_service = build_docs_service()
+    print("[Google Docs] 書き出し中...")
+    write_to_google_docs(docs_service, rows)
+    print(f"[Google Docs] {len(rows)}件書き出しました")
+
+
 def main():
     load_dotenv()
 
@@ -273,29 +275,23 @@ def main():
     parser.add_argument("--dry-run", action="store_true", help="ターミナル出力のみ（Google出力をスキップ）")
     args = parser.parse_args()
 
-    has_doc_id = bool(os.environ.get("GOOGLE_DOC_ID"))
+    if not os.environ.get("GEMINI_API_KEY"):
+        print("[ERROR] GEMINI_API_KEYが設定されていません。.envを確認してください")
+        return
 
     if not args.dry_run:
-        if not os.environ.get("GEMINI_API_KEY"):
-            print("[ERROR] GEMINI_API_KEYが設定されていません。.envを確認してください")
-            return
         if not os.environ.get("SPREADSHEET_ID"):
             print("[ERROR] SPREADSHEET_IDが設定されていません。.envを確認してください")
             return
-        if not has_doc_id:
+        if not os.environ.get("GOOGLE_DOC_ID"):
             print("[INFO] GOOGLE_DOC_IDが未設定のため、Google Docs書き出しはスキップされます")
 
         sheets_service = build_sheets_service()
-        if already_curated_today(sheets_service):
+        all_rows = fetch_spreadsheet_data(sheets_service)
+
+        if already_curated_today(all_rows):
             print(f"[Spreadsheet] {date.today().isoformat()}のデータはすでに存在するためスキップします")
-            # 既存データでもDocs書き出しは実行（手動追記分を反映するため）
-            if has_doc_id:
-                rows = read_today_from_spreadsheet(sheets_service)
-                if rows:
-                    docs_service = build_docs_service()
-                    print("[Google Docs] 書き出し中...")
-                    write_to_google_docs(docs_service, rows)
-                    print(f"[Google Docs] {len(rows)}件書き出しました")
+            _write_docs_if_configured(all_rows)
             return
 
     print("[RSS] 取得中...")
@@ -318,17 +314,14 @@ def main():
             print(f"   {a.get('summary_ja', '')}")
         return
 
-    check_spreadsheet_token_usage(sheets_service)
+    check_spreadsheet_token_usage(all_rows)
 
     print("[Spreadsheet] 追記中...")
     append_to_spreadsheet(sheets_service, curated)
 
-    if has_doc_id:
-        docs_service = build_docs_service()
-        rows = read_today_from_spreadsheet(sheets_service)
-        print("[Google Docs] 書き出し中...")
-        write_to_google_docs(docs_service, rows)
-        print(f"[Google Docs] {len(rows)}件書き出しました")
+    # 追記後にデータを再取得してDocs書き出し
+    all_rows = fetch_spreadsheet_data(sheets_service)
+    _write_docs_if_configured(all_rows)
 
 
 if __name__ == "__main__":

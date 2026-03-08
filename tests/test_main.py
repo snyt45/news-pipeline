@@ -155,24 +155,19 @@ def test_build_docs_service_creates_service():
     assert call_args[0][1] == "v1"
 
 
-def test_read_today_from_spreadsheet_returns_today_rows():
-    """Spreadsheetから今日の日付の行だけを返す"""
+def test_read_today_rows_returns_today_rows():
+    """今日の日付の行だけを返す"""
     today = date.today().isoformat()
 
-    mock_service = MagicMock()
-    mock_sheet = mock_service.spreadsheets.return_value.values.return_value
-    mock_sheet.get.return_value.execute.return_value = {
-        "values": [
-            ["日付", "カテゴリ", "タイトル", "URL", "要約", "ソース"],
-            [today, "AI/LLM", "今日の記事", "https://example.com/1", "要約1", "Zenn"],
-            ["2026-03-01", "DevTools", "古い記事", "https://example.com/2", "要約2", "HN"],
-            [today, "DevTools", "今日の記事2", "https://example.com/3", "要約3", "HN"],
-        ]
-    }
+    all_rows = [
+        ["日付", "カテゴリ", "タイトル", "URL", "要約", "ソース"],
+        [today, "AI/LLM", "今日の記事", "https://example.com/1", "要約1", "Zenn"],
+        ["2026-03-01", "DevTools", "古い記事", "https://example.com/2", "要約2", "HN"],
+        [today, "DevTools", "今日の記事2", "https://example.com/3", "要約3", "HN"],
+    ]
 
-    with patch.dict("os.environ", {"SPREADSHEET_ID": "test-sheet-id"}):
-        from main import read_today_from_spreadsheet
-        rows = read_today_from_spreadsheet(mock_service)
+    from main import read_today_rows
+    rows = read_today_rows(all_rows)
 
     assert len(rows) == 2
     assert rows[0][2] == "今日の記事"
@@ -227,17 +222,12 @@ def test_write_to_google_docs_skips_when_no_rows():
 
 def test_check_spreadsheet_token_usage_warns_over_threshold(capsys):
     """8万トークン超えで警告を出す"""
-    mock_service = MagicMock()
-    mock_sheet = mock_service.spreadsheets.return_value.values.return_value
-    # 1セル100文字 x 1000行 x 6列 = 600,000文字 ≈ 150,000トークン（日本語1文字≈1トークン）
+    # 1セル100文字 x 1000行 x 6列 = 600,000文字 ≈ 150,000トークン
     row = ["a" * 100] * 6
-    mock_sheet.get.return_value.execute.return_value = {
-        "values": [row] * 1000
-    }
+    all_rows = [row] * 1000
 
-    with patch.dict("os.environ", {"SPREADSHEET_ID": "test-sheet-id"}):
-        from main import check_spreadsheet_token_usage
-        result = check_spreadsheet_token_usage(mock_service)
+    from main import check_spreadsheet_token_usage
+    result = check_spreadsheet_token_usage(all_rows)
 
     assert result is True
     captured = capsys.readouterr()
@@ -246,16 +236,10 @@ def test_check_spreadsheet_token_usage_warns_over_threshold(capsys):
 
 def test_check_spreadsheet_token_usage_no_warning_under_threshold(capsys):
     """閾値以下では警告を出さない"""
-    mock_service = MagicMock()
-    mock_sheet = mock_service.spreadsheets.return_value.values.return_value
-    # 少量データ
-    mock_sheet.get.return_value.execute.return_value = {
-        "values": [["test", "AI", "title", "url", "summary", "source"]] * 10
-    }
+    all_rows = [["test", "AI", "title", "url", "summary", "source"]] * 10
 
-    with patch.dict("os.environ", {"SPREADSHEET_ID": "test-sheet-id"}):
-        from main import check_spreadsheet_token_usage
-        result = check_spreadsheet_token_usage(mock_service)
+    from main import check_spreadsheet_token_usage
+    result = check_spreadsheet_token_usage(all_rows)
 
     assert result is False
     captured = capsys.readouterr()
