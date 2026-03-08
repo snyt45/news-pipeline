@@ -1,6 +1,6 @@
 import json
 from unittest.mock import patch, MagicMock
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone, timedelta, date
 
 
 def test_fetch_feeds_returns_articles_from_yaml(tmp_path):
@@ -153,3 +153,27 @@ def test_build_docs_service_creates_service():
     call_args = mock_build.call_args
     assert call_args[0][0] == "docs"
     assert call_args[0][1] == "v1"
+
+
+def test_read_today_from_spreadsheet_returns_today_rows():
+    """Spreadsheetから今日の日付の行だけを返す"""
+    today = date.today().isoformat()
+
+    mock_service = MagicMock()
+    mock_sheet = mock_service.spreadsheets.return_value.values.return_value
+    mock_sheet.get.return_value.execute.return_value = {
+        "values": [
+            ["日付", "カテゴリ", "タイトル", "URL", "要約", "ソース"],
+            [today, "AI/LLM", "今日の記事", "https://example.com/1", "要約1", "Zenn"],
+            ["2026-03-01", "DevTools", "古い記事", "https://example.com/2", "要約2", "HN"],
+            [today, "DevTools", "今日の記事2", "https://example.com/3", "要約3", "HN"],
+        ]
+    }
+
+    with patch.dict("os.environ", {"SPREADSHEET_ID": "test-sheet-id"}):
+        from main import read_today_from_spreadsheet
+        rows = read_today_from_spreadsheet(mock_service)
+
+    assert len(rows) == 2
+    assert rows[0][2] == "今日の記事"
+    assert rows[1][2] == "今日の記事2"

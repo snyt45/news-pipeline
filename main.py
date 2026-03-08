@@ -187,6 +187,18 @@ def append_to_spreadsheet(service, curated):
     print(f"Spreadsheetに{len(rows)}件追記しました")
 
 
+def read_today_from_spreadsheet(service):
+    spreadsheet_id = os.environ["SPREADSHEET_ID"]
+    sheet_name = os.environ.get("SHEET_NAME", DEFAULT_SHEET_NAME)
+    result = service.spreadsheets().values().get(
+        spreadsheetId=spreadsheet_id,
+        range=sheet_name,
+    ).execute()
+    all_rows = result.get("values", [])
+    today = date.today().isoformat()
+    return [row for row in all_rows if row and row[0] == today]
+
+
 def main():
     load_dotenv()
 
