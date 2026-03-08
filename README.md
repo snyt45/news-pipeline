@@ -82,7 +82,7 @@ cp .env.example .env
 
 1. [Google Cloud Console](https://console.cloud.google.com/) でプロジェクトを作成
 2. 「APIとサービス」→「ライブラリ」から **Google Sheets API** を有効化
-3. 「APIとサービス」→「認証情報」→「認証情報を作成」→「サービスアカウント」で作成
+3. 「APIとサービス」→「認証情報」→「認証情報を作成」→「サービスアカウント」で作成（ロールの付与は不要。権限はSpreadsheetの共有設定で制御する）
 4. 作成したサービスアカウントの「鍵」タブ →「鍵を追加」→「JSON」
 5. ダウンロードしたJSONファイルをプロジェクトルートに `credentials.json` として配置
 
