@@ -205,7 +205,7 @@ def append_to_spreadsheet(service, curated):
         body={"values": rows},
     ).execute()
 
-    print(f"Spreadsheetに{len(rows)}件追記しました")
+    print(f"[Spreadsheet] {len(rows)}件追記しました")
 
 
 def read_today_from_spreadsheet(service):
@@ -265,7 +265,7 @@ def write_to_google_docs(docs_service, rows):
         body={"requests": requests},
     ).execute()
 
-    print(f"Google Docsに{len(rows)}件書き出しました")
+    print(f"[Google Docs] {len(rows)}件書き出しました")
 
 
 def main():
@@ -275,29 +275,42 @@ def main():
     parser.add_argument("--dry-run", action="store_true", help="ターミナル出力のみ（Google出力をスキップ）")
     args = parser.parse_args()
 
+    has_doc_id = bool(os.environ.get("GOOGLE_DOC_ID"))
+
     if not args.dry_run:
+        if not os.environ.get("GEMINI_API_KEY"):
+            print("[ERROR] GEMINI_API_KEYが設定されていません。.envを確認してください")
+            return
+        if not os.environ.get("SPREADSHEET_ID"):
+            print("[ERROR] SPREADSHEET_IDが設定されていません。.envを確認してください")
+            return
+        if not has_doc_id:
+            print("[INFO] GOOGLE_DOC_IDが未設定のため、Google Docs書き出しはスキップされます")
+
         sheets_service = build_sheets_service()
         if already_curated_today(sheets_service):
-            print(f"{date.today().isoformat()}のデータはすでに存在するためスキップします")
+            print(f"[Spreadsheet] {date.today().isoformat()}のデータはすでに存在するためスキップします")
             # 既存データでもDocs書き出しは実行（手動追記分を反映するため）
-            rows = read_today_from_spreadsheet(sheets_service)
-            if rows and os.environ.get("GOOGLE_DOC_ID"):
-                docs_service = build_docs_service()
-                print("Google Docsに書き出し中...")
-                write_to_google_docs(docs_service, rows)
+            if has_doc_id:
+                rows = read_today_from_spreadsheet(sheets_service)
+                if rows:
+                    docs_service = build_docs_service()
+                    print("[Google Docs] 書き出し中...")
+                    write_to_google_docs(docs_service, rows)
+                    print(f"[Google Docs] {len(rows)}件書き出しました")
             return
 
-    print("RSS取得中...")
+    print("[RSS] 取得中...")
     articles = fetch_feeds()
-    print(f"{len(articles)}件の記事を取得")
+    print(f"[RSS] {len(articles)}件の記事を取得")
 
     if not articles:
-        print("記事が見つかりませんでした")
+        print("[RSS] 記事が見つかりませんでした")
         return
 
-    print("キュレーション中...")
+    print("[Gemini] キュレーション中...")
     curated = curate(articles)
-    print(f"{len(curated)}件に厳選")
+    print(f"[Gemini] {len(curated)}件に厳選")
 
     if args.dry_run:
         for i, a in enumerate(curated, 1):
@@ -309,13 +322,13 @@ def main():
 
     check_spreadsheet_token_usage(sheets_service)
 
-    print("Spreadsheetに追記中...")
+    print("[Spreadsheet] 追記中...")
     append_to_spreadsheet(sheets_service, curated)
 
-    if os.environ.get("GOOGLE_DOC_ID"):
+    if has_doc_id:
         docs_service = build_docs_service()
         rows = read_today_from_spreadsheet(sheets_service)
-        print("Google Docsに書き出し中...")
+        print("[Google Docs] 書き出し中...")
         write_to_google_docs(docs_service, rows)
 
 
