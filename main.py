@@ -119,3 +119,38 @@ def parse_curate_response(text):
     except json.JSONDecodeError:
         print("[WARN] キュレーション結果のパースに失敗")
         return []
+
+
+def main():
+    import argparse
+
+    parser = argparse.ArgumentParser(description="News Pipeline")
+    parser.add_argument("--dry-run", action="store_true", help="ターミナル出力のみ（Google出力をスキップ）")
+    args = parser.parse_args()
+
+    print("RSS取得中...")
+    articles = fetch_feeds()
+    print(f"{len(articles)}件の記事を取得")
+
+    if not articles:
+        print("記事が見つかりませんでした")
+        return
+
+    print("キュレーション中...")
+    curated = curate(articles)
+    print(f"{len(curated)}件に厳選")
+
+    if args.dry_run:
+        for i, a in enumerate(curated, 1):
+            print(f"\n{'='*60}")
+            print(f"{i}. [{a.get('category', '')}] {a['title']}")
+            print(f"   {a['url']}")
+            print(f"   {a.get('summary_ja', '')}")
+        return
+
+    # Phase 2: Google出力（後で実装）
+    print("[TODO] Spreadsheet追記 + Google Docs上書き")
+
+
+if __name__ == "__main__":
+    main()
