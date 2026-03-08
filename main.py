@@ -4,6 +4,7 @@ import json
 import os
 import re
 import yaml
+from collections import defaultdict
 from datetime import datetime, timezone, timedelta, date
 from calendar import timegm
 from google import genai
@@ -197,6 +198,54 @@ def read_today_from_spreadsheet(service):
     all_rows = result.get("values", [])
     today = date.today().isoformat()
     return [row for row in all_rows if row and row[0] == today]
+
+
+def write_to_google_docs(docs_service, rows):
+    if not rows:
+        return
+
+    doc_id = os.environ["GOOGLE_DOC_ID"]
+
+    # 既存の内容を取得して削除
+    doc = docs_service.documents().get(documentId=doc_id).execute()
+    end_index = doc["body"]["content"][-1]["endIndex"]
+    requests = []
+    if end_index > 2:
+        requests.append({"deleteContentRange": {
+            "range": {"startIndex": 1, "endIndex": end_index - 1}
+        }})
+
+    # カテゴリ別にグループ化
+    categories = defaultdict(list)
+    for row in rows:
+        category = row[1] if len(row) > 1 else "その他"
+        categories[category].append(row)
+
+    # テキスト生成
+    today = rows[0][0] if rows else date.today().isoformat()
+    lines = [f"{today} 技術ニュース\n\n"]
+    for category, articles in categories.items():
+        lines.append(f"## {category}\n\n")
+        for a in articles:
+            title = a[2] if len(a) > 2 else ""
+            url = a[3] if len(a) > 3 else ""
+            summary = a[4] if len(a) > 4 else ""
+            lines.append(f"- {title}\n")
+            if url:
+                lines.append(f"  URL: {url}\n")
+            if summary:
+                lines.append(f"  {summary}\n")
+            lines.append("\n")
+
+    text = "".join(lines)
+    requests.append({"insertText": {"location": {"index": 1}, "text": text}})
+
+    docs_service.documents().batchUpdate(
+        documentId=doc_id,
+        body={"requests": requests},
+    ).execute()
+
+    print(f"Google Docsに{len(rows)}件書き出しました")
 
 
 def main():

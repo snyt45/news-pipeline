@@ -177,3 +177,49 @@ def test_read_today_from_spreadsheet_returns_today_rows():
     assert len(rows) == 2
     assert rows[0][2] == "今日の記事"
     assert rows[1][2] == "今日の記事2"
+
+
+def test_write_to_google_docs_formats_by_category():
+    """カテゴリ別に構造化してDocsに書き出す"""
+    today = date.today().isoformat()
+
+    rows = [
+        [today, "AI/LLM", "AI記事1", "https://example.com/1", "AI要約1", "Zenn"],
+        [today, "AI/LLM", "AI記事2", "https://example.com/2", "AI要約2", "HN"],
+        [today, "DevTools", "ツール記事", "https://example.com/3", "ツール要約", "Zenn"],
+    ]
+
+    mock_docs_service = MagicMock()
+    mock_docs_service.documents.return_value.get.return_value.execute.return_value = {
+        "body": {"content": [{"endIndex": 1}]}
+    }
+
+    with patch.dict("os.environ", {"GOOGLE_DOC_ID": "test-doc-id"}):
+        from main import write_to_google_docs
+        write_to_google_docs(mock_docs_service, rows)
+
+    # batchUpdateが呼ばれたことを確認
+    mock_docs_service.documents.return_value.batchUpdate.assert_called()
+    call_args = mock_docs_service.documents.return_value.batchUpdate.call_args
+    body = call_args[1]["body"] if "body" in call_args[1] else call_args.kwargs["body"]
+    requests = body["requests"]
+
+    # insertTextリクエストの中にカテゴリとタイトルが含まれる
+    insert_texts = [r["insertText"]["text"] for r in requests if "insertText" in r]
+    full_text = "".join(insert_texts)
+    assert "AI/LLM" in full_text
+    assert "DevTools" in full_text
+    assert "AI記事1" in full_text
+    assert "ツール記事" in full_text
+    assert "https://example.com/1" in full_text
+
+
+def test_write_to_google_docs_skips_when_no_rows():
+    """行がない場合はAPI呼び出しをスキップする"""
+    mock_docs_service = MagicMock()
+
+    with patch.dict("os.environ", {"GOOGLE_DOC_ID": "test-doc-id"}):
+        from main import write_to_google_docs
+        write_to_google_docs(mock_docs_service, [])
+
+    mock_docs_service.documents.return_value.batchUpdate.assert_not_called()
