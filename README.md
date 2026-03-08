@@ -86,6 +86,8 @@ cp .env.example .env
 4. 作成したサービスアカウントの「鍵」タブ →「鍵を追加」→「JSON」
 5. ダウンロードしたJSONファイルをプロジェクトルートに `credentials.json` として配置
 
+> **セキュリティに関する注意:** サービスアカウントキーのJSONファイルは有効期限がなく、漏洩すると第三者にGCPリソースを操作される恐れがある。`.gitignore`でリポジトリへの混入は防いでいるが、ローカルの取り扱いには注意すること。サービスアカウントの権限はGoogle Sheets APIのみに絞り、不要になったキーはGCPコンソールから削除する。より安全な方法として、ローカル実行なら`gcloud auth application-default login`によるADC認証、GitHub Actionsなら[Workload Identity連携](https://cloud.google.com/iam/docs/workload-identity-federation)がGoogleから推奨されている。
+
 ### 4. Spreadsheet準備
 
 1. Google Spreadsheetを新規作成
