@@ -123,12 +123,9 @@ def test_append_to_spreadsheet_sends_correct_data():
     mock_sheet = mock_service.spreadsheets.return_value.values.return_value
     mock_sheet.append.return_value.execute.return_value = {}
 
-    with patch("main.build") as mock_build, \
-         patch("main.ServiceAccountCredentials.from_service_account_file") as mock_creds, \
-         patch.dict("os.environ", {"SPREADSHEET_ID": "test-sheet-id", "GOOGLE_CREDENTIALS_PATH": "./credentials.json"}):
-        mock_build.return_value = mock_service
+    with patch.dict("os.environ", {"SPREADSHEET_ID": "test-sheet-id"}):
         from main import append_to_spreadsheet
-        append_to_spreadsheet(curated)
+        append_to_spreadsheet(mock_service, curated)
 
     mock_sheet.append.assert_called_once()
     call_kwargs = mock_sheet.append.call_args

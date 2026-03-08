@@ -130,18 +130,30 @@ def parse_curate_response(text):
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
 
-def append_to_spreadsheet(curated):
+def build_sheets_service():
+    credentials_path = os.environ.get("GOOGLE_CREDENTIALS_PATH", "./credentials.json")
+    creds = ServiceAccountCredentials.from_service_account_file(
+        credentials_path, scopes=SCOPES
+    )
+    return build("sheets", "v4", credentials=creds)
+
+
+def already_curated_today(service):
+    spreadsheet_id = os.environ["SPREADSHEET_ID"]
+    sheet_name = os.environ.get("SPREADSHEET_SHEET_NAME", SPREADSHEET_SHEET_NAME_DEFAULT)
+    result = service.spreadsheets().values().get(
+        spreadsheetId=spreadsheet_id,
+        range=f"{sheet_name}!A:A",
+    ).execute()
+    existing_dates = [row[0] for row in result.get("values", []) if row]
+    return date.today().isoformat() in existing_dates
+
+
+def append_to_spreadsheet(service, curated):
     if not curated:
         return
 
     spreadsheet_id = os.environ["SPREADSHEET_ID"]
-    credentials_path = os.environ.get("GOOGLE_CREDENTIALS_PATH", "./credentials.json")
-
-    creds = ServiceAccountCredentials.from_service_account_file(
-        credentials_path, scopes=SCOPES
-    )
-    service = build("sheets", "v4", credentials=creds)
-
     today = date.today().isoformat()
     rows = []
     for a in curated:
@@ -171,6 +183,12 @@ def main():
     parser.add_argument("--dry-run", action="store_true", help="ターミナル出力のみ（Google出力をスキップ）")
     args = parser.parse_args()
 
+    if not args.dry_run:
+        service = build_sheets_service()
+        if already_curated_today(service):
+            print(f"{date.today().isoformat()}のデータはすでに存在するためスキップします")
+            return
+
     print("RSS取得中...")
     articles = fetch_feeds()
     print(f"{len(articles)}件の記事を取得")
@@ -192,7 +210,7 @@ def main():
         return
 
     print("Spreadsheetに追記中...")
-    append_to_spreadsheet(curated)
+    append_to_spreadsheet(service, curated)
 
 
 if __name__ == "__main__":
