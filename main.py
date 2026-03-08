@@ -36,3 +36,49 @@ def fetch_feeds(feeds_path="config/feeds.yaml"):
             })
 
     return articles
+
+
+def build_prompt(profile_path="config/profile.yaml", articles=None):
+    with open(profile_path) as f:
+        profile = yaml.safe_load(f)
+
+    lines = [
+        f"あなたは{profile['role']}向けの技術キュレーターです。",
+        f"以下の記事リストから、最も価値のある{profile['articles_per_day']}件を厳選してください。",
+        "",
+        "## 選定基準（上にあるほど優先）",
+    ]
+    for interest in profile["interests"]:
+        lines.append(f"- {interest}")
+
+    lines.append("")
+    lines.append("## 除外基準")
+    for item in profile["exclude"]:
+        lines.append(f"- {item}")
+
+    lang = profile.get("language", "ja")
+    lines.extend([
+        "",
+        "## 出力形式",
+        f"各記事について{lang}で2-3行の要約をつけてください。",
+        f"英語記事の要約も{lang}で書いてください。",
+        "カテゴリ（AI/LLM, DevTools, Architecture, IndieHacker等）も付与してください。",
+        "提供された情報のみに基づいて判断してください。",
+        "",
+        "以下のJSON形式で出力してください:",
+        "```json",
+        '[{"title": "...", "url": "...", "summary_ja": "...", "source": "...", "category": "..."}]',
+        "```",
+        "",
+        "## 記事リスト",
+    ])
+
+    if articles:
+        for i, a in enumerate(articles, 1):
+            lines.append(f"{i}. [{a['source']}] {a['title']}")
+            lines.append(f"   URL: {a['url']}")
+            if a.get("summary"):
+                lines.append(f"   要約: {a['summary'][:200]}")
+            lines.append("")
+
+    return "\n".join(lines)

@@ -82,3 +82,30 @@ def test_fetch_feeds_skips_failed_feed(tmp_path):
 
     assert len(articles) == 0
 
+
+def test_build_prompt_includes_interests_and_excludes(tmp_path):
+    """profile.yamlの内容がプロンプトに反映される"""
+    profile_yaml = tmp_path / "profile.yaml"
+    profile_yaml.write_text(
+        'role: "テストエンジニア"\n'
+        'model: "gemini-2.5-flash-lite"\n'
+        'language: "ja"\n'
+        "articles_per_day: 10\n"
+        "interests:\n"
+        '  - "AI活用"\n'
+        '  - "開発ツール"\n'
+        "exclude:\n"
+        '  - "初心者向け"\n'
+        '  - "広告記事"\n'
+    )
+
+    from main import build_prompt
+    prompt = build_prompt(str(profile_yaml), [])
+
+    assert "テストエンジニア" in prompt
+    assert "AI活用" in prompt
+    assert "開発ツール" in prompt
+    assert "初心者向け" in prompt
+    assert "広告記事" in prompt
+    assert "10" in prompt
+    assert "ja" in prompt or "日本語" in prompt
