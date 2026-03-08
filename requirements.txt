@@ -1,0 +1,5 @@
+feedparser
+pyyaml
+python-dotenv
+google-genai
+pytest
