@@ -276,9 +276,15 @@ def main():
     args = parser.parse_args()
 
     if not args.dry_run:
-        service = build_sheets_service()
-        if already_curated_today(service):
+        sheets_service = build_sheets_service()
+        if already_curated_today(sheets_service):
             print(f"{date.today().isoformat()}のデータはすでに存在するためスキップします")
+            # 既存データでもDocs書き出しは実行（手動追記分を反映するため）
+            rows = read_today_from_spreadsheet(sheets_service)
+            if rows and os.environ.get("GOOGLE_DOC_ID"):
+                docs_service = build_docs_service()
+                print("Google Docsに書き出し中...")
+                write_to_google_docs(docs_service, rows)
             return
 
     print("RSS取得中...")
@@ -301,8 +307,16 @@ def main():
             print(f"   {a.get('summary_ja', '')}")
         return
 
+    check_spreadsheet_token_usage(sheets_service)
+
     print("Spreadsheetに追記中...")
-    append_to_spreadsheet(service, curated)
+    append_to_spreadsheet(sheets_service, curated)
+
+    if os.environ.get("GOOGLE_DOC_ID"):
+        docs_service = build_docs_service()
+        rows = read_today_from_spreadsheet(sheets_service)
+        print("Google Docsに書き出し中...")
+        write_to_google_docs(docs_service, rows)
 
 
 if __name__ == "__main__":
