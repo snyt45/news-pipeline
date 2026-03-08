@@ -1,6 +1,6 @@
 # news-pipeline
 
-RSS + LLMキュレーション + Google Spreadsheet + NotebookLMラジオのパイプライン。
+RSSで技術ニュースを収集し、LLMで自分の興味に合う記事を厳選するパイプライン。
 
 散歩中にNotebookLMラジオで自分向けの技術ニュースを聴くための仕組み。
 
@@ -25,7 +25,7 @@ cp .env.example .env
 
 `.env`の`GEMINI_API_KEY`に取得したキーを設定。
 
-ここまでで`mise run dry-run`が動く（ターミナルにキュレーション結果を出力）。
+ここまでで`mise run dry-run`が動く（厳選結果をターミナルに出力）。
 
 ### 3. GCPサービスアカウント作成
 
@@ -55,7 +55,7 @@ GOOGLE_CREDENTIALS_PATH=./credentials.json
 
 ```bash
 mise tasks         # コマンド一覧を表示
-mise run dry-run   # キュレーション結果をターミナルに出力
+mise run dry-run   # 厳選結果をターミナルに出力
 mise run run       # 全パイプライン実行（Spreadsheet出力）
 mise run test      # テスト実行
 ```
