@@ -140,9 +140,8 @@ def test_curate_returns_parsed_articles(tmp_path):
     mock_response = MagicMock()
     mock_response.text = api_response_text
 
-    from main import GEMINI_API_KEY_ENV
     with patch("main.genai") as mock_genai, \
-         patch.dict("os.environ", {GEMINI_API_KEY_ENV: "test-key"}):
+         patch.dict("os.environ", {"GEMINI_API_KEY": "test-key"}):
         mock_genai.Client.return_value.models.generate_content.return_value = mock_response
         from main import curate
         result = curate(articles, str(profile_yaml))
@@ -192,10 +191,9 @@ def test_append_to_spreadsheet_sends_correct_data():
     mock_sheet = mock_service.spreadsheets.return_value.values.return_value
     mock_sheet.append.return_value.execute.return_value = {}
 
-    from main import SPREADSHEET_ID_ENV, CREDENTIALS_PATH_ENV
     with patch("main.build") as mock_build, \
          patch("main.ServiceAccountCredentials.from_service_account_file") as mock_creds, \
-         patch.dict("os.environ", {SPREADSHEET_ID_ENV: "test-sheet-id", CREDENTIALS_PATH_ENV: "./credentials.json"}):
+         patch.dict("os.environ", {"SPREADSHEET_ID": "test-sheet-id", "GOOGLE_CREDENTIALS_PATH": "./credentials.json"}):
         mock_build.return_value = mock_service
         from main import append_to_spreadsheet
         append_to_spreadsheet(curated)

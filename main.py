@@ -13,12 +13,8 @@ from googleapiclient.discovery import build
 
 FEEDS_PATH = "config/feeds.yaml"
 PROFILE_PATH = "config/profile.yaml"
-GEMINI_API_KEY_ENV = "GEMINI_API_KEY"
 ARTICLE_MAX_AGE_HOURS = 24
 SUMMARY_MAX_LENGTH = 200
-SPREADSHEET_ID_ENV = "SPREADSHEET_ID"
-CREDENTIALS_PATH_ENV = "GOOGLE_CREDENTIALS_PATH"
-DEFAULT_CREDENTIALS_PATH = "./credentials.json"
 SPREADSHEET_RANGE = "Sheet1"
 
 
@@ -113,7 +109,7 @@ def curate(articles, profile_path=PROFILE_PATH):
 
     prompt = build_prompt(profile_path, articles, profile=profile)
 
-    client = genai.Client(api_key=os.environ[GEMINI_API_KEY_ENV])
+    client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
     response = client.models.generate_content(
         model=profile["model"],
         contents=prompt,
@@ -141,8 +137,8 @@ def append_to_spreadsheet(curated):
     if not curated:
         return
 
-    spreadsheet_id = os.environ[SPREADSHEET_ID_ENV]
-    credentials_path = os.environ.get(CREDENTIALS_PATH_ENV, DEFAULT_CREDENTIALS_PATH)
+    spreadsheet_id = os.environ["SPREADSHEET_ID"]
+    credentials_path = os.environ.get("GOOGLE_CREDENTIALS_PATH", "./credentials.json")
 
     creds = ServiceAccountCredentials.from_service_account_file(
         credentials_path, scopes=SCOPES
