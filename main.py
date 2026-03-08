@@ -1,3 +1,4 @@
+import argparse
 import feedparser
 import json
 import os
@@ -23,10 +24,11 @@ def fetch_feeds(feeds_path="config/feeds.yaml"):
             continue
 
         for entry in feed.entries:
-            published = getattr(entry, "published_parsed", None)
-            if published:
+            published_parsed = getattr(entry, "published_parsed", None)
+            published_dt = None
+            if published_parsed:
                 published_dt = datetime.fromtimestamp(
-                    timegm(published), tz=timezone.utc
+                    timegm(published_parsed), tz=timezone.utc
                 )
                 if published_dt < cutoff:
                     continue
@@ -37,15 +39,16 @@ def fetch_feeds(feeds_path="config/feeds.yaml"):
                 "summary": entry.get("summary", ""),
                 "source": feed_conf["name"],
                 "lang": feed_conf.get("lang", "en"),
-                "published": str(published_dt) if published else "",
+                "published": str(published_dt) if published_dt else "",
             })
 
     return articles
 
 
-def build_prompt(profile_path="config/profile.yaml", articles=None):
-    with open(profile_path) as f:
-        profile = yaml.safe_load(f)
+def build_prompt(profile_path="config/profile.yaml", articles=None, profile=None):
+    if profile is None:
+        with open(profile_path) as f:
+            profile = yaml.safe_load(f)
 
     lines = [
         f"あなたは{profile['role']}向けの技術キュレーターです。",
@@ -96,7 +99,7 @@ def curate(articles, profile_path="config/profile.yaml"):
     with open(profile_path) as f:
         profile = yaml.safe_load(f)
 
-    prompt = build_prompt(profile_path, articles)
+    prompt = build_prompt(profile_path, articles, profile=profile)
 
     client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
     response = client.models.generate_content(
@@ -121,7 +124,6 @@ def parse_curate_response(text):
 
 def main():
     load_dotenv()
-    import argparse
 
     parser = argparse.ArgumentParser(description="News Pipeline")
     parser.add_argument("--dry-run", action="store_true", help="ターミナル出力のみ（Google出力をスキップ）")
