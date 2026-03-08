@@ -15,7 +15,7 @@ FEEDS_PATH = "config/feeds.yaml"
 PROFILE_PATH = "config/profile.yaml"
 ARTICLE_MAX_AGE_HOURS = 24
 SUMMARY_MAX_LENGTH = 200
-SPREADSHEET_SHEET_NAME = os.environ.get("SPREADSHEET_SHEET_NAME", "シート1")
+SPREADSHEET_SHEET_NAME_DEFAULT = "シート1"
 
 
 def fetch_feeds(feeds_path=FEEDS_PATH):
@@ -53,10 +53,7 @@ def fetch_feeds(feeds_path=FEEDS_PATH):
     return articles
 
 
-def build_prompt(profile_path=PROFILE_PATH, articles=None, profile=None):
-    if profile is None:
-        with open(profile_path) as f:
-            profile = yaml.safe_load(f)
+def build_prompt(profile, articles=None):
 
     lines = [
         f"あなたは{profile['role']}向けの技術キュレーターです。",
@@ -107,7 +104,7 @@ def curate(articles, profile_path=PROFILE_PATH):
     with open(profile_path) as f:
         profile = yaml.safe_load(f)
 
-    prompt = build_prompt(profile_path, articles, profile=profile)
+    prompt = build_prompt(profile, articles)
 
     client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
     response = client.models.generate_content(
@@ -159,7 +156,7 @@ def append_to_spreadsheet(curated):
 
     service.spreadsheets().values().append(
         spreadsheetId=spreadsheet_id,
-        range=SPREADSHEET_SHEET_NAME,
+        range=os.environ.get("SPREADSHEET_SHEET_NAME", SPREADSHEET_SHEET_NAME_DEFAULT),
         valueInputOption="RAW",
         body={"values": rows},
     ).execute()
