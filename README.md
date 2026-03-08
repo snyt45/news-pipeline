@@ -28,7 +28,7 @@ flowchart TD
 
 ## Forkして自分用に調整する
 
-このリポジトリをForkして、2つのファイルを編集すれば自分専用のパイプラインになる。
+LLMがprofile.yamlの設定をもとに記事を選別するので、`interests`と`exclude`を自分に合わせて書き換えるだけで厳選の精度が変わる。このリポジトリをForkして、2つのファイルを編集すれば自分専用のパイプラインになる。
 
 **`config/feeds.yaml`** — 情報源の追加・変更
 
@@ -57,8 +57,6 @@ exclude:
   # 除外したいジャンルを追加
 ```
 
-LLMがこの設定をもとに記事を選別するので、`interests`と`exclude`を自分に合わせて書き換えるだけで厳選の精度が変わる。
-
 ## クイックスタート
 
 ### 1. 依存インストール
@@ -79,8 +77,6 @@ cp .env.example .env
 ```
 
 `.env`の`GEMINI_API_KEY`に取得したキーを設定。
-
-ここまでで`mise run dry-run`が動く（厳選結果をターミナルに出力）。
 
 ### 3. GCPサービスアカウント作成
 
@@ -103,8 +99,6 @@ cp .env.example .env
 SPREADSHEET_ID=取得したSpreadsheetのID
 GOOGLE_CREDENTIALS_PATH=./credentials.json
 ```
-
-ここまでで`mise run run`が動く（Spreadsheetに追記）。
 
 ## コマンド
 
