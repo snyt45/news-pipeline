@@ -34,24 +34,24 @@ LLMがprofile.yamlの設定をもとに記事を選別するので、`interests`
 
 ```yaml
 feeds:
-  - name: "Zenn - トレンド"
-    url: "https://zenn.dev/feed"
-    lang: "ja"
+  - name: "Zenn - トレンド"    # フィード名（Spreadsheetのソース列に表示）
+    url: "https://zenn.dev/feed" # RSSフィードのURL
+    lang: "ja"                   # 記事の言語（en / ja）
   # 自分の読みたいRSSフィードを追加
 ```
 
 **`config/profile.yaml`** — 自分の興味・嗜好を定義
 
 ```yaml
-role: "フルスタックエンジニア（Ruby, TypeScript, React）"
-articles_per_day: 15
+role: "フルスタックエンジニア（Ruby, TypeScript, React）"  # LLMに伝える自分の職種・スキル
+articles_per_day: 15  # 1日に厳選する記事数
 
-interests:
+interests:           # 優先的に選んでほしいジャンル（上ほど優先度が高い）
   - "AI/LLMの実用的な活用事例や新動向"
   - "開発ツール・ワークフロー改善"
   # 自分の興味を追加
 
-exclude:
+exclude:             # 除外したいジャンル
   - "初心者向けチュートリアル"
   - "プレスリリースや広告色が強い記事"
   # 除外したいジャンルを追加
