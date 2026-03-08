@@ -223,3 +223,40 @@ def test_write_to_google_docs_skips_when_no_rows():
         write_to_google_docs(mock_docs_service, [])
 
     mock_docs_service.documents.return_value.batchUpdate.assert_not_called()
+
+
+def test_check_spreadsheet_token_usage_warns_over_threshold(capsys):
+    """8万トークン超えで警告を出す"""
+    mock_service = MagicMock()
+    mock_sheet = mock_service.spreadsheets.return_value.values.return_value
+    # 1セル100文字 x 1000行 x 6列 = 600,000文字 ≈ 150,000トークン（日本語1文字≈1トークン）
+    row = ["a" * 100] * 6
+    mock_sheet.get.return_value.execute.return_value = {
+        "values": [row] * 1000
+    }
+
+    with patch.dict("os.environ", {"SPREADSHEET_ID": "test-sheet-id"}):
+        from main import check_spreadsheet_token_usage
+        result = check_spreadsheet_token_usage(mock_service)
+
+    assert result is True
+    captured = capsys.readouterr()
+    assert "WARNING" in captured.out
+
+
+def test_check_spreadsheet_token_usage_no_warning_under_threshold(capsys):
+    """閾値以下では警告を出さない"""
+    mock_service = MagicMock()
+    mock_sheet = mock_service.spreadsheets.return_value.values.return_value
+    # 少量データ
+    mock_sheet.get.return_value.execute.return_value = {
+        "values": [["test", "AI", "title", "url", "summary", "source"]] * 10
+    }
+
+    with patch.dict("os.environ", {"SPREADSHEET_ID": "test-sheet-id"}):
+        from main import check_spreadsheet_token_usage
+        result = check_spreadsheet_token_usage(mock_service)
+
+    assert result is False
+    captured = capsys.readouterr()
+    assert "WARNING" not in captured.out
