@@ -12,7 +12,7 @@ python3 -m venv .venv
 description = "テスト実行"
 run = ".venv/bin/python -m pytest tests/ -v"
 
-[tasks.run]
+[tasks.pipeline]
 description = "パイプライン実行"
 run = ".venv/bin/python main.py"
 

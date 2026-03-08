@@ -68,17 +68,21 @@ mise install
 mise run setup
 ```
 
-### 2. Gemini APIキー取得
-
-[Google AI Studio](https://aistudio.google.com/apikey) でAPIキーを取得。
+### 2. envファイル作成
 
 ```bash
 cp .env.example .env
 ```
 
-`.env`の`GEMINI_API_KEY`に取得したキーを設定。
+### 3. Gemini APIキー取得
 
-### 3. GCPサービスアカウント作成
+[Google AI Studio](https://aistudio.google.com/apikey) でAPIキーを取得し、`.env`に設定:
+
+```
+GEMINI_API_KEY=取得したAPIキー
+```
+
+### 4. GCPサービスアカウント作成
 
 1. [Google Cloud Console](https://console.cloud.google.com/) でプロジェクトを作成
 2. 「APIとサービス」→「ライブラリ」から **Google Sheets API** を有効化
@@ -86,11 +90,17 @@ cp .env.example .env
 4. 作成したサービスアカウントの「鍵」タブ →「鍵を追加」→「JSON」
 5. ダウンロードしたJSONファイルをプロジェクトルートに `credentials.json` として配置
 
+`.env`に追記:
+
+```
+GOOGLE_CREDENTIALS_PATH=./credentials.json
+```
+
 > **セキュリティに関する注意:** サービスアカウントキーのJSONファイルは有効期限がなく、漏洩すると第三者にGCPリソースを操作される恐れがある。`.gitignore`でリポジトリへの混入は防いでいるが、ローカルの取り扱いには注意すること。サービスアカウントの権限はGoogle Sheets APIのみに絞り、不要になったキーはGCPコンソールから削除する。より安全な方法として、ローカル実行なら`gcloud auth application-default login`によるADC認証、GitHub Actionsなら[Workload Identity連携](https://cloud.google.com/iam/docs/workload-identity-federation)がGoogleから推奨されている。
 
-### 4. Spreadsheet準備
+### 5. Spreadsheet準備
 
-1. Google Spreadsheetを新規作成
+1. Google Spreadsheetを新規作成（シート名はデフォルトの「シート1」のままにする。英語環境では「Sheet1」になるため、その場合は`.env`に`SPREADSHEET_SHEET_NAME=Sheet1`を追加する）
 2. 1行目にヘッダーを入力: `日付 | カテゴリ | タイトル | URL | 要約 | ソース`
 3. サービスアカウントのメールアドレス（credentials.json内の`client_email`）をSpreadsheetの共有に追加（編集者権限）
 4. SpreadsheetのURLから`SPREADSHEET_ID`を取得（`/d/`と`/edit`の間の文字列）
@@ -99,7 +109,6 @@ cp .env.example .env
 
 ```
 SPREADSHEET_ID=取得したSpreadsheetのID
-GOOGLE_CREDENTIALS_PATH=./credentials.json
 ```
 
 ## コマンド
@@ -107,6 +116,6 @@ GOOGLE_CREDENTIALS_PATH=./credentials.json
 ```bash
 mise tasks         # コマンド一覧を表示
 mise run dry-run   # 厳選結果をターミナルに出力
-mise run run       # 全パイプライン実行（Spreadsheet出力）
+mise run pipeline  # 全パイプライン実行（Spreadsheet出力）
 mise run test      # テスト実行
 ```

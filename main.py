@@ -15,7 +15,7 @@ FEEDS_PATH = "config/feeds.yaml"
 PROFILE_PATH = "config/profile.yaml"
 ARTICLE_MAX_AGE_HOURS = 24
 SUMMARY_MAX_LENGTH = 200
-SPREADSHEET_RANGE = "Sheet1"
+SPREADSHEET_SHEET_NAME = os.environ.get("SPREADSHEET_SHEET_NAME", "シート1")
 
 
 def fetch_feeds(feeds_path=FEEDS_PATH):
@@ -159,7 +159,7 @@ def append_to_spreadsheet(curated):
 
     service.spreadsheets().values().append(
         spreadsheetId=spreadsheet_id,
-        range=SPREADSHEET_RANGE,
+        range=SPREADSHEET_SHEET_NAME,
         valueInputOption="RAW",
         body={"values": rows},
     ).execute()
