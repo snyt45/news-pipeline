@@ -137,3 +137,19 @@ def test_append_to_spreadsheet_sends_correct_data():
     assert rows[0][3] == "https://example.com/1"
     assert rows[0][4] == "テスト要約"
     assert rows[0][5] == "Test Feed"
+
+
+def test_build_docs_service_creates_service():
+    """Google Docs APIサービスが構築される"""
+    mock_creds = MagicMock()
+
+    with patch("main.ServiceAccountCredentials.from_service_account_file", return_value=mock_creds) as mock_from_file, \
+         patch("main.build") as mock_build, \
+         patch.dict("os.environ", {"GOOGLE_CREDENTIALS_PATH": "./credentials.json"}):
+        from main import build_docs_service
+        build_docs_service()
+
+    mock_build.assert_called_once()
+    call_args = mock_build.call_args
+    assert call_args[0][0] == "docs"
+    assert call_args[0][1] == "v1"

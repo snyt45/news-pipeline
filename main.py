@@ -127,7 +127,10 @@ def parse_curate_response(text):
         return []
 
 
-SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
+SCOPES = [
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/documents",
+]
 
 
 def build_sheets_service():
@@ -136,6 +139,14 @@ def build_sheets_service():
         credentials_path, scopes=SCOPES
     )
     return build("sheets", "v4", credentials=creds)
+
+
+def build_docs_service():
+    credentials_path = os.environ.get("GOOGLE_CREDENTIALS_PATH", "./credentials.json")
+    creds = ServiceAccountCredentials.from_service_account_file(
+        credentials_path, scopes=SCOPES
+    )
+    return build("docs", "v1", credentials=creds)
 
 
 def already_curated_today(service):
