@@ -109,3 +109,45 @@ def test_build_prompt_includes_interests_and_excludes(tmp_path):
     assert "広告記事" in prompt
     assert "10" in prompt
     assert "ja" in prompt or "日本語" in prompt
+
+
+import json
+
+
+def test_curate_returns_parsed_articles(tmp_path):
+    """Gemini APIのレスポンスをパースして記事リストを返す"""
+    profile_yaml = tmp_path / "profile.yaml"
+    profile_yaml.write_text(
+        'role: "テストエンジニア"\n'
+        'model: "gemini-2.5-flash-lite"\n'
+        'language: "ja"\n'
+        "articles_per_day: 2\n"
+        "interests:\n"
+        '  - "AI活用"\n'
+        "exclude:\n"
+        '  - "広告"\n'
+    )
+
+    articles = [
+        {"title": "Article 1", "url": "https://example.com/1", "summary": "Summary 1", "source": "Test", "lang": "en"},
+        {"title": "Article 2", "url": "https://example.com/2", "summary": "Summary 2", "source": "Test", "lang": "ja"},
+    ]
+
+    curated = [
+        {"title": "Article 1", "url": "https://example.com/1", "summary_ja": "要約1", "source": "Test", "category": "AI/LLM"},
+    ]
+    api_response_text = f"```json\n{json.dumps(curated, ensure_ascii=False)}\n```"
+
+    mock_response = MagicMock()
+    mock_response.text = api_response_text
+
+    with patch("main.genai") as mock_genai, \
+         patch.dict("os.environ", {"GEMINI_API_KEY": "test-key"}):
+        mock_genai.Client.return_value.models.generate_content.return_value = mock_response
+        from main import curate
+        result = curate(articles, str(profile_yaml))
+
+    assert len(result) == 1
+    assert result[0]["title"] == "Article 1"
+    assert result[0]["summary_ja"] == "要約1"
+    assert result[0]["category"] == "AI/LLM"

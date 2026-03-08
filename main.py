@@ -1,7 +1,14 @@
 import feedparser
+import json
+import os
+import re
 import yaml
 from datetime import datetime, timezone, timedelta
 from calendar import timegm
+from google import genai
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 def fetch_feeds(feeds_path="config/feeds.yaml"):
@@ -82,3 +89,33 @@ def build_prompt(profile_path="config/profile.yaml", articles=None):
             lines.append("")
 
     return "\n".join(lines)
+
+
+def curate(articles, profile_path="config/profile.yaml"):
+    if not articles:
+        return []
+
+    with open(profile_path) as f:
+        profile = yaml.safe_load(f)
+
+    prompt = build_prompt(profile_path, articles)
+
+    client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
+    response = client.models.generate_content(
+        model=profile["model"],
+        contents=prompt,
+    )
+
+    return parse_curate_response(response.text)
+
+
+def parse_curate_response(text):
+    match = re.search(r"```json\s*(.*?)\s*```", text, re.DOTALL)
+    if match:
+        return json.loads(match.group(1))
+
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        print("[WARN] キュレーション結果のパースに失敗")
+        return []
