@@ -8,8 +8,6 @@ from calendar import timegm
 from google import genai
 from dotenv import load_dotenv
 
-load_dotenv()
-
 
 def fetch_feeds(feeds_path="config/feeds.yaml"):
     with open(feeds_path) as f:
@@ -122,6 +120,7 @@ def parse_curate_response(text):
 
 
 def main():
+    load_dotenv()
     import argparse
 
     parser = argparse.ArgumentParser(description="News Pipeline")

@@ -1,3 +1,4 @@
+import json
 from unittest.mock import patch, MagicMock
 from datetime import datetime, timezone, timedelta
 
@@ -111,8 +112,6 @@ def test_build_prompt_includes_interests_and_excludes(tmp_path):
     assert "ja" in prompt or "日本語" in prompt
 
 
-import json
-
 
 def test_curate_returns_parsed_articles(tmp_path):
     """Gemini APIのレスポンスをパースして記事リストを返す"""
@@ -151,3 +150,26 @@ def test_curate_returns_parsed_articles(tmp_path):
     assert result[0]["title"] == "Article 1"
     assert result[0]["summary_ja"] == "要約1"
     assert result[0]["category"] == "AI/LLM"
+
+
+def test_parse_curate_response_with_json_fence():
+    """JSONフェンス付きレスポンスをパースできる"""
+    from main import parse_curate_response
+    text = '```json\n[{"title": "Test"}]\n```'
+    result = parse_curate_response(text)
+    assert result == [{"title": "Test"}]
+
+
+def test_parse_curate_response_without_fence():
+    """フェンスなしの生JSONもパースできる"""
+    from main import parse_curate_response
+    text = '[{"title": "Test"}]'
+    result = parse_curate_response(text)
+    assert result == [{"title": "Test"}]
+
+
+def test_parse_curate_response_invalid_json():
+    """不正なテキストは空リストを返す"""
+    from main import parse_curate_response
+    result = parse_curate_response("これはJSONではない")
+    assert result == []
