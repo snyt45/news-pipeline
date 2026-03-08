@@ -1,0 +1,21 @@
+[tools]
+python = "3.13"
+
+[tasks.setup]
+description = "venv作成と依存インストール"
+run = """
+python3 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+"""
+
+[tasks.test]
+description = "テスト実行"
+run = ".venv/bin/python -m pytest tests/ -v"
+
+[tasks.run]
+description = "パイプライン実行"
+run = ".venv/bin/python main.py"
+
+[tasks.dry-run]
+description = "ターミナル出力のみ（Google出力スキップ）"
+run = ".venv/bin/python main.py --dry-run"
