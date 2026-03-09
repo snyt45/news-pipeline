@@ -320,3 +320,23 @@ def test_fetch_article_contents_mixed_results():
 
     assert len(result) == 1
     assert "https://example.com/good" in result
+
+
+def test_fetch_article_contents_continues_on_exception():
+    """例外が発生しても残りのURLの処理を続行する"""
+    from main import fetch_article_contents
+
+    def mock_fetch(url):
+        if "error" in url:
+            raise ConnectionError("接続エラー")
+        return "<html><body><p>本文</p></body></html>"
+
+    with patch("main.trafilatura.fetch_url", side_effect=mock_fetch), \
+         patch("main.trafilatura.extract", return_value="本文"):
+        result = fetch_article_contents([
+            "https://example.com/error",
+            "https://example.com/ok",
+        ])
+
+    assert len(result) == 1
+    assert "https://example.com/ok" in result

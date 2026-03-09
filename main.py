@@ -214,15 +214,19 @@ def read_today_rows(all_rows):
 def fetch_article_contents(urls):
     contents = {}
     for url in urls:
-        downloaded = trafilatura.fetch_url(url)
-        if not downloaded:
-            print(f"[Content] 取得失敗: {url}")
+        try:
+            downloaded = trafilatura.fetch_url(url)
+            if not downloaded:
+                print(f"[Content] 取得失敗: {url}")
+                continue
+            text = trafilatura.extract(downloaded)
+            if not text:
+                print(f"[Content] 本文抽出失敗: {url}")
+                continue
+            contents[url] = text
+        except Exception as e:
+            print(f"[Content] エラー: {url} - {e}")
             continue
-        text = trafilatura.extract(downloaded)
-        if not text:
-            print(f"[Content] 本文抽出失敗: {url}")
-            continue
-        contents[url] = text
     return contents
 
 
