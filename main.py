@@ -226,8 +226,13 @@ def fetch_article_contents(urls):
     return contents
 
 
-def write_to_google_docs(docs_service, rows):
+def write_to_google_docs(docs_service, rows, contents):
     if not rows:
+        return
+
+    # 本文がある記事だけフィルタ
+    rows_with_content = [row for row in rows if len(row) > 3 and row[3] in contents]
+    if not rows_with_content:
         return
 
     doc_id = os.environ["GOOGLE_DOC_ID"]
@@ -243,24 +248,24 @@ def write_to_google_docs(docs_service, rows):
 
     # カテゴリ別にグループ化
     categories = defaultdict(list)
-    for row in rows:
+    for row in rows_with_content:
         category = row[1] if len(row) > 1 else "その他"
         categories[category].append(row)
 
     # テキスト生成
-    today = rows[0][0] if rows else date.today().isoformat()
+    today = rows_with_content[0][0] if rows_with_content else date.today().isoformat()
     lines = [f"{today} 技術ニュース\n\n"]
     for category, articles in categories.items():
         lines.append(f"## {category}\n\n")
         for a in articles:
             title = a[2] if len(a) > 2 else ""
             url = a[3] if len(a) > 3 else ""
-            summary = a[4] if len(a) > 4 else ""
+            content = contents.get(url, "")
             lines.append(f"- {title}\n")
             if url:
                 lines.append(f"  URL: {url}\n")
-            if summary:
-                lines.append(f"  {summary}\n")
+            if content:
+                lines.append(f"  {content}\n")
             lines.append("\n")
 
     text = "".join(lines)
