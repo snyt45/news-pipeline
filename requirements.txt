@@ -4,4 +4,5 @@ python-dotenv
 google-genai
 google-auth
 google-api-python-client
+trafilatura
 pytest
