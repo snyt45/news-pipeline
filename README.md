@@ -113,7 +113,7 @@ GOOGLE_CREDENTIALS_PATH=./credentials.json
 SPREADSHEET_ID=取得したSpreadsheetのID
 ```
 
-### 6. Google Docs準備（任意）
+### 6. Google Docs準備
 
 NotebookLMのソースとして使うGoogle Docsを準備する。
 
@@ -126,8 +126,6 @@ NotebookLMのソースとして使うGoogle Docsを準備する。
 ```
 GOOGLE_DOC_ID=取得したDocsのID
 ```
-
-設定しない場合、Spreadsheetへの追記のみ実行される。
 
 ## コマンド
 
@@ -160,15 +158,3 @@ Spreadsheetに直接行を追加する（日付・カテゴリ・タイトル・
 
 `mise run dry-run`は厳選結果をターミナルに出力するだけ。SpreadsheetやGoogle Docsには書き込まない。
 
-### Spreadsheetのローテーション
-
-NotebookLMのSpreadsheetソース制限は10万トークン。パイプライン実行時にトークン使用量が80%を超えると警告が表示される。
-
-警告が出たら:
-
-1. 新しいGoogle Spreadsheetを作成
-2. 1行目にヘッダーを入力: `日付 | カテゴリ | タイトル | URL | 要約 | ソース`
-3. サービスアカウントを共有に追加（編集者権限）
-4. `.env`の`SPREADSHEET_ID`を新しいIDに差し替え
-
-旧Spreadsheetはそのまま残るので、過去記事の検索に使える。

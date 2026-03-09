@@ -18,7 +18,6 @@ PROFILE_PATH = "config/profile.yaml"
 MAX_AGE_HOURS = 24
 SUMMARY_MAX_LENGTH = 200
 DEFAULT_SHEET_NAME = "シート1"
-TOKEN_WARNING_THRESHOLD = 80000
 
 
 def fetch_feeds(feeds_path=FEEDS_PATH):
@@ -161,17 +160,6 @@ def fetch_spreadsheet_data(service):
         range=sheet_name,
     ).execute()
     return result.get("values", [])
-
-
-def check_spreadsheet_token_usage(all_rows):
-    total_chars = sum(len(cell) for row in all_rows for cell in row)
-    estimated_tokens = total_chars  # 日本語1文字≈1トークンで概算
-
-    if estimated_tokens > TOKEN_WARNING_THRESHOLD:
-        print(f"[WARNING] Spreadsheetのトークン使用量が閾値を超えています（推定{estimated_tokens:,}トークン / 上限100,000トークン）")
-        print("[WARNING] NotebookLMのソース制限に達する可能性があります。新しいSpreadsheetを作成し、.envのSPREADSHEET_IDを差し替えてください")
-        return True
-    return False
 
 
 def already_curated_today(all_rows):
@@ -348,8 +336,6 @@ def main():
             print(f"   {a['url']}")
             print(f"   {a.get('summary_ja', '')}")
         return
-
-    check_spreadsheet_token_usage(all_rows)
 
     print("[Spreadsheet] 追記中...")
     append_to_spreadsheet(sheets_service, curated)

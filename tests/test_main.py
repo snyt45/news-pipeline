@@ -243,32 +243,6 @@ def test_write_to_google_docs_skips_when_no_contents():
     mock_docs_service.documents.return_value.batchUpdate.assert_not_called()
 
 
-def test_check_spreadsheet_token_usage_warns_over_threshold(capsys):
-    """8万トークン超えで警告を出す"""
-    # 1セル100文字 x 1000行 x 6列 = 600,000文字 ≈ 150,000トークン
-    row = ["a" * 100] * 6
-    all_rows = [row] * 1000
-
-    from main import check_spreadsheet_token_usage
-    result = check_spreadsheet_token_usage(all_rows)
-
-    assert result is True
-    captured = capsys.readouterr()
-    assert "WARNING" in captured.out
-
-
-def test_check_spreadsheet_token_usage_no_warning_under_threshold(capsys):
-    """閾値以下では警告を出さない"""
-    all_rows = [["test", "AI", "title", "url", "summary", "source"]] * 10
-
-    from main import check_spreadsheet_token_usage
-    result = check_spreadsheet_token_usage(all_rows)
-
-    assert result is False
-    captured = capsys.readouterr()
-    assert "WARNING" not in captured.out
-
-
 def test_fetch_article_contents_returns_content():
     """URLから記事本文を取得して辞書で返す"""
     from main import fetch_article_contents
