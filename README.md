@@ -11,20 +11,22 @@ flowchart TD
     subgraph 自動
         A[RSS取得<br/>Zenn, HN, はてブ等] --> B[Gemini APIで15件に厳選<br/>+ 日本語要約]
         B --> C[Spreadsheetに追記<br/>履歴蓄積]
-        C --> D[Google Docsに書き出し]
+        C --> D[記事本文を取得<br/>trafilaturaでスクレイピング]
+        D --> E[Google Docsに書き出し<br/>本文付き]
     end
     subgraph 手動
-        E[NotebookLMでラジオ生成] --> F[散歩中に聴く]
+        F[NotebookLMでラジオ生成] --> G[散歩中に聴く]
     end
-    D --> E
+    E --> F
 ```
 
 1. **RSS取得** — feeds.yamlに登録したフィードから24時間以内の記事を収集
 2. **LLMで厳選** — profile.yamlの興味・除外基準をもとに、Gemini APIが15件に絞り込んで日本語要約をつける
 3. **Spreadsheet追記** — 日付・カテゴリ・タイトル・URL・要約・ソースを1行1記事で蓄積
-4. **Google Docs書き出し** — Spreadsheetから今日分を読み取り、カテゴリ別に構造化してGoogle Docsに上書き
-5. **NotebookLMでラジオ生成**（手動）— Google DocsをNotebookLMに追加し、音声を生成
-6. **聴く**（手動）— 生成されたラジオを散歩中に聴く
+4. **記事本文を取得** — 厳選された記事のURLからtrafilaturaで本文を抽出（本文が取れなかった記事はスキップ）
+5. **Google Docs書き出し** — 本文が取得できた記事をカテゴリ別に構造化してGoogle Docsに上書き（タイトル・URL・本文）
+6. **NotebookLMでラジオ生成**（手動）— Google DocsをNotebookLMに追加し、音声を生成
+7. **聴く**（手動）— 生成されたラジオを散歩中に聴く
 
 ## Forkして自分用に調整する
 
@@ -140,7 +142,9 @@ mise run test      # テスト実行
 
 ### 毎朝の運用
 
-`mise run pipeline`を実行する。初回実行時はRSS取得→LLM厳選→Spreadsheet追記→Google Docs書き出しの全工程が走る。同じ日に再実行するとSpreadsheet追記はスキップされるが、Google Docsの書き出しは毎回実行される（Spreadsheetの今日分を読み取って上書きするため）。
+`mise run pipeline`を実行する。初回実行時はRSS取得→LLM厳選→Spreadsheet追記→記事本文取得→Google Docs書き出しの全工程が走る。同じ日に再実行するとSpreadsheet追記はスキップされるが、記事本文の取得とGoogle Docsの書き出しは毎回実行される（Spreadsheetの今日分を読み取って上書きするため）。
+
+Google Docsには記事の本文がそのまま載る。trafilaturaで各記事URLから本文を抽出しており、本文が取得できなかった記事はDocsに載らない。Spreadsheetには従来通り要約のみ蓄積される。
 
 ### 手動で記事を追加したいとき
 
