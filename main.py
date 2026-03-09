@@ -3,6 +3,7 @@ import feedparser
 import json
 import os
 import re
+import trafilatura
 import yaml
 from collections import defaultdict
 from datetime import datetime, timezone, timedelta, date
@@ -208,6 +209,21 @@ def append_to_spreadsheet(service, curated):
 def read_today_rows(all_rows):
     today = date.today().isoformat()
     return [row for row in all_rows if row and row[0] == today]
+
+
+def fetch_article_contents(urls):
+    contents = {}
+    for url in urls:
+        downloaded = trafilatura.fetch_url(url)
+        if not downloaded:
+            print(f"[Content] 取得失敗: {url}")
+            continue
+        text = trafilatura.extract(downloaded)
+        if not text:
+            print(f"[Content] 本文抽出失敗: {url}")
+            continue
+        contents[url] = text
+    return contents
 
 
 def write_to_google_docs(docs_service, rows):

@@ -244,3 +244,56 @@ def test_check_spreadsheet_token_usage_no_warning_under_threshold(capsys):
     assert result is False
     captured = capsys.readouterr()
     assert "WARNING" not in captured.out
+
+
+def test_fetch_article_contents_returns_content():
+    """URLから記事本文を取得して辞書で返す"""
+    from main import fetch_article_contents
+
+    with patch("main.trafilatura.fetch_url", return_value="<html><body><p>記事の本文です</p></body></html>") as mock_fetch, \
+         patch("main.trafilatura.extract", return_value="記事の本文です") as mock_extract:
+        result = fetch_article_contents(["https://example.com/article1"])
+
+    assert result == {"https://example.com/article1": "記事の本文です"}
+    mock_fetch.assert_called_once_with("https://example.com/article1")
+
+
+def test_fetch_article_contents_skips_failed_urls():
+    """本文取得に失敗したURLはスキップする"""
+    from main import fetch_article_contents
+
+    with patch("main.trafilatura.fetch_url", return_value=None):
+        result = fetch_article_contents(["https://example.com/fail"])
+
+    assert result == {}
+
+
+def test_fetch_article_contents_skips_empty_extract():
+    """extractがNoneを返した場合はスキップする"""
+    from main import fetch_article_contents
+
+    with patch("main.trafilatura.fetch_url", return_value="<html></html>"), \
+         patch("main.trafilatura.extract", return_value=None):
+        result = fetch_article_contents(["https://example.com/empty"])
+
+    assert result == {}
+
+
+def test_fetch_article_contents_mixed_results():
+    """成功と失敗が混在する場合、成功分だけ返す"""
+    from main import fetch_article_contents
+
+    def mock_fetch(url):
+        if "good" in url:
+            return "<html><body><p>本文</p></body></html>"
+        return None
+
+    with patch("main.trafilatura.fetch_url", side_effect=mock_fetch), \
+         patch("main.trafilatura.extract", return_value="本文"):
+        result = fetch_article_contents([
+            "https://example.com/good",
+            "https://example.com/bad",
+        ])
+
+    assert len(result) == 1
+    assert "https://example.com/good" in result
