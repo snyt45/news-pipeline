@@ -146,6 +146,12 @@ mise run test      # テスト実行
 
 Google Docsには記事の本文がそのまま載る。trafilaturaで各記事URLから本文を抽出しており、本文が取得できなかった記事はDocsに載らない。Spreadsheetには従来通り要約のみ蓄積される。
 
+### NotebookLMでラジオを生成する
+
+1. NotebookLMでノートブックを作成し、Google Docsをソースとして追加する（初回のみ）
+2. パイプライン実行後、NotebookLMのソース一覧からGoogle Docsをクリックし、「クリックしてGoogleドライブと同期」を押す（Google Docs側が更新されてもNotebookLMは自動で同期しないため、手動で同期が必要）
+3. 音声の概要を生成してラジオを聴く
+
 ### 手動で記事を追加したいとき
 
 Spreadsheetに直接行を追加する（日付・カテゴリ・タイトル・URL・要約・ソース）。その後`mise run pipeline`を再実行すると、手動追加分も含めてGoogle Docsに反映される。
