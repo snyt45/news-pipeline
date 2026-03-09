@@ -283,10 +283,20 @@ def _write_docs_if_configured(all_rows):
     rows = read_today_rows(all_rows)
     if not rows:
         return
+
+    urls = [row[3] for row in rows if len(row) > 3]
+    print("[Content] 記事本文を取得中...")
+    contents = fetch_article_contents(urls)
+    print(f"[Content] {len(contents)}/{len(urls)}件の本文を取得")
+
+    if not contents:
+        print("[Google Docs] 本文が取得できなかったため書き出しスキップ")
+        return
+
     docs_service = build_docs_service()
     print("[Google Docs] 書き出し中...")
-    write_to_google_docs(docs_service, rows)
-    print(f"[Google Docs] {len(rows)}件書き出しました")
+    write_to_google_docs(docs_service, rows, contents)
+    print(f"[Google Docs] {len(contents)}件書き出しました")
 
 
 def main():
